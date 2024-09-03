@@ -187,3 +187,212 @@ sudo apt autoremove -y
 ```
 
 Теперь ваш NVIDIA Jetson Nano готов к использованию для разработки и тестирования проектов с дронами!
+
+
+# Руководство по настройке NVIDIA Jetson Nano
+
+Вот переработанный текст для публикации на GitHub:
+
+---
+
+## Руководство по установке и настройке Jetson Nano для проекта автономного дрона
+
+### 1. Установка операционной системы
+
+Следуйте официальным инструкциям по установке операционной системы на Jetson Nano. Завершите процесс установки, установив часовой пояс и создав учетную запись пользователя.
+
+### 2. Обновление и очистка системы
+
+Обновите систему и удалите ненужные пакеты:
+
+```bash
+sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y
+```
+
+### 3. Установка необходимых программ
+
+В этом руководстве используется текстовый редактор `nano`, который не установлен по умолчанию на Jetson Nano. Вы можете использовать `vim` или установить `nano` с помощью следующей команды:
+
+```bash
+sudo apt install nano
+```
+
+### 4. Упрощение операционной системы (опционально)
+
+Jetson Nano поставляется с большим количеством предустановленных инструментов, которые могут быть не нужны для проекта дрона. Чтобы сэкономить ресурсы, рекомендуется удалить эти инструменты:
+
+**Внимание:** внимательно проверьте команду перед выполнением, чтобы избежать удаления необходимых пакетов.
+
+```bash
+sudo apt purge snapd lx* nautilus* gedit openbox* printer* rhythmbox* gnome* lightdm* xscreensaver* thunderbird libreoffice* chromium-* docker* ubuntu-wallpapers* light-themes && sudo apt autoremove
+```
+
+### 5. Удаление Network Manager и WPA Supplicant
+
+Если дрон не требует сложных сетевых настроек, можно использовать стандартный сервис Linux `systemd-networkd`. Убедитесь, что DHCP включен для Ethernet интерфейса перед удалением `network-manager` и `wpasupplicant`:
+
+Создайте файл сетевой конфигурации, если он еще не существует:
+
+```bash
+sudo nano /etc/systemd/network/eth0.network
+```
+
+Пример содержимого файла:
+
+```ini
+[Match]
+Name=eth0
+
+[Network]
+DHCP=yes
+```
+
+Перезапустите и включите `systemd-networkd`:
+
+```bash
+sudo systemctl restart systemd-networkd
+sudo systemctl enable systemd-networkd
+```
+
+Удалите `network-manager` и `wpasupplicant`:
+
+```bash
+sudo apt purge network-manager wpasupplicant
+```
+
+### 6. Подготовка к установке автономного дрона
+
+Установите необходимые инструменты:
+
+```bash
+sudo apt install git python3-pip
+```
+
+Клонируйте проект:
+
+```bash
+git clone https://github.com/sieuwe1/Autonomous-Ai-drone-scripts.git
+```
+
+### 7. Установка Jetson Inference
+
+Установите зависимости:
+
+```bash
+sudo apt install cmake libpython3-dev python3-numpy
+```
+
+Клонируйте и установите `Jetson Inference`:
+
+```bash
+git clone --recursive https://github.com/dusty-nv/jetson-inference
+cd jetson-inference
+mkdir build
+cd build
+cmake ../
+make -j$(nproc)
+sudo make install
+sudo ldconfig
+```
+
+Подробнее об установке [здесь](https://github.com/dusty-nv/jetson-inference/blob/master/docs/building-repo-2.md).
+
+### 8. Установка дополнительных пакетов
+
+```bash
+python3 -m pip install --upgrade pip
+python3 -m pip install scikit-build cmake opencv-python numpy dronekit pyserial keyboard simple-pid geographiclib
+```
+
+### 9. Использование
+
+Для запуска дрона:
+
+```bash
+sudo python3 follow_person_main.py --mode=flight --debug_path=debug/flight1
+```
+
+Для тестирования в симуляторе измените параметр `--mode` с `flight` на `test`.
+
+### 10. Установка симулятора ArduPilot
+
+Клонируйте репозиторий:
+
+```bash
+git clone https://github.com/ArduPilot/ardupilot --recursive
+cd ardupilot
+```
+
+### 11. Подготовка среды
+
+Установите дополнительные пакеты:
+
+```bash
+sudo apt-get install python-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev libsmpeg-dev python-numpy subversion libportmidi-dev ffmpeg libswscale-dev libavformat-dev libavcodec-dev
+```
+
+Обновите `setuptools` и `wheel`:
+
+```bash
+pip2 install -U setuptools wheel
+```
+
+Запустите скрипт установки окружения:
+
+```bash
+Tools/environment_install/install-prereqs-ubuntu.sh -y
+```
+
+Обновите пути:
+
+```bash
+. ~/.profile
+```
+
+### 12. Проблемы с установкой Pygame
+
+Если возникают проблемы с установкой `pygame`, попробуйте установить версию 2.0.0:
+
+```bash
+sed -i 's/\$PYTHON_PKGS pygame /$PYTHON_PKGS pygame==2.0.0 /' Tools/environment_install/install-prereqs-ubuntu.sh
+```
+
+### 13. Сборка
+
+Настройте проект перед сборкой:
+
+```bash
+./waf configure
+```
+
+Соберите проект:
+
+```bash
+./waf clean
+./waf build
+```
+
+### 14. Запуск симулятора
+
+Запустите симулятор для ArduCopter:
+
+```bash
+sim_vehicle.py -v ArduCopter
+```
+
+Для запуска с консолью и/или картой:
+
+```bash
+pip install -U --user --verbose wxpython console map
+sim_vehicle.py -v ArduCopter --console --map
+```
+
+### 15. Очистка
+
+Удалите все неиспользуемые пакеты:
+
+```bash
+sudo apt autoremove -y
+```
+
+
